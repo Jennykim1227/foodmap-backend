@@ -1,10 +1,14 @@
 // 필요한 패키지 불러오기
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const Anthropic = require('@anthropic-ai/sdk');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
+
+// CORS 설정 (Flutter 웹에서 접근 허용)
+app.use(cors());
 
 // Anthropic AI 클라이언트
 const anthropic = new Anthropic({
@@ -116,7 +120,7 @@ app.post('/api/save-place', async (req, res) => {
           shared_from: shared_from || null,
           memo: memo || null,
           instagram_url: instagram_url || null,
-          user_id: '00000000-0000-0000-0000-000000000000' // 임시 user_id (나중에 인증 추가)
+          user_id: '00000000-0000-0000-0000-000000000000'
         }
       ])
       .select();
