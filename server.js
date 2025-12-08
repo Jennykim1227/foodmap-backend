@@ -98,7 +98,7 @@ ${caption}`
 // 맛집 저장 API (Supabase 연결!)
 app.post('/api/save-place', async (req, res) => {
   try {
-    const { name, address, category, shared_from, memo, instagram_url } = req.body;
+    const { name, address, category, shared_from, memo, instagram_url, latitude, longitude } = req.body;
     
     if (!name || !address) {
       return res.status(400).json({
@@ -107,7 +107,7 @@ app.post('/api/save-place', async (req, res) => {
       });
     }
     
-    console.log('저장할 맛집:', name, address);
+    console.log('저장할 맛집:', name, address, latitude, longitude);
     
     // Supabase에 저장
     const { data, error } = await supabase
@@ -120,6 +120,8 @@ app.post('/api/save-place', async (req, res) => {
           shared_from: shared_from || null,
           memo: memo || null,
           instagram_url: instagram_url || null,
+          latitude: latitude || null,
+          longitude: longitude || null,
           user_id: '00000000-0000-0000-0000-000000000000'
         }
       ])
