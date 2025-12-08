@@ -52,13 +52,21 @@ app.post('/api/parse-reel', async (req, res) => {
       max_tokens: 1024,
       messages: [{
         role: 'user',
-        content: `다음 인스타그램 릴스 캡션에서 음식점 이름과 주소를 추출해줘.
+        content: `다음 인스타그램 릴스 캡션에서 음식점 이름, 주소, 음식 카테고리를 추출해줘.
 JSON 형식으로만 답변해줘. 다른 말은 하지 마.
+
+카테고리는 다음 중 하나로 선택해:
+한식, 일식, 중식, 양식, 베트남, 태국, 인도, 멕시코, 이탈리안, 프렌치, 
+패스트푸드, 분식, 샌드위치, 해산물, 스테이크, 라멘, 카레, 비건, 샐러드,
+베이커리, 디저트, 카페, 아이스크림, 버블티, 
+이자카야, 펍, 와인바, 칵테일바,
+삼겹살, 곱창, 치킨, 피자, 버거, 샤브샤브, 훠궈, 오마카세, 뷔페, 브런치, 기타
 
 형식:
 {
   "name": "가게이름",
-  "address": "전체주소"
+  "address": "전체주소",
+  "category": "카테고리"
 }
 
 캡션:
@@ -79,7 +87,8 @@ ${caption}`
         success: true,
         data: {
           name: parsed.name,
-          address: parsed.address
+          address: parsed.address,
+          category: parsed.category || '기타'
         }
       });
     } else {
@@ -107,7 +116,7 @@ app.post('/api/save-place', async (req, res) => {
       });
     }
     
-    console.log('저장할 맛집:', name, address, latitude, longitude);
+    console.log('저장할 맛집:', name, address, latitude, longitude, category);
     
     // Supabase에 저장
     const { data, error } = await supabase
