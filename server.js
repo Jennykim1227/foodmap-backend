@@ -14,7 +14,6 @@ app.use(cors());
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
-
 // Supabase 클라이언트
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -290,4 +289,4 @@ app.listen(PORT, () => {
   console.log(`🤖 AI 기능이 활성화되었습니다!`);
   console.log(`💾 데이터베이스가 연결되었습니다!`);
   console.log(`🗺️ 카카오 지도 API 연결됨!`);
-});
+}); 
