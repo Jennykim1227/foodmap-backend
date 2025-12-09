@@ -210,6 +210,78 @@ app.delete('/api/places/:id', async (req, res) => {
   }
 });
 
+// 카카오 좌표 변환 API
+app.post('/api/geocode', async (req, res) => {
+  try {
+    const { address } = req.body;
+    
+    if (!address) {
+      return res.status(400).json({
+        success: false,
+        error: '주소를 입력해주세요'
+      });
+    }
+    
+    console.log('좌표 변환 요청:', address);
+    
+    const query = encodeURIComponent(address);
+    
+    // 주소 검색
+    let response = await fetch(
+      `https://dapi.kakao.com/v2/local/search/address.json?query=${query}`,
+      {
+        headers: {
+          'Authorization': 'KakaoAK 1fd7b644e2bc999f88fe79931e19e618'
+        }
+      }
+    );
+    
+    let data = await response.json();
+    console.log('카카오 주소 검색 결과:', data.documents?.length || 0);
+    
+    if (data.documents && data.documents.length > 0) {
+      return res.json({
+        success: true,
+        lat: parseFloat(data.documents[0].y),
+        lng: parseFloat(data.documents[0].x)
+      });
+    }
+    
+    // 주소 검색 실패시 키워드 검색
+    response = await fetch(
+      `https://dapi.kakao.com/v2/local/search/keyword.json?query=${query}`,
+      {
+        headers: {
+          'Authorization': 'KakaoAK 1fd7b644e2bc999f88fe79931e19e618'
+        }
+      }
+    );
+    
+    data = await response.json();
+    console.log('카카오 키워드 검색 결과:', data.documents?.length || 0);
+    
+    if (data.documents && data.documents.length > 0) {
+      return res.json({
+        success: true,
+        lat: parseFloat(data.documents[0].y),
+        lng: parseFloat(data.documents[0].x)
+      });
+    }
+    
+    res.json({
+      success: false,
+      error: '좌표를 찾을 수 없습니다'
+    });
+    
+  } catch (error) {
+    console.error('좌표 변환 에러:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // 서버 시작
 const PORT = 3000;
 app.listen(PORT, () => {
@@ -217,4 +289,5 @@ app.listen(PORT, () => {
   console.log(`📱 테스트: 브라우저에서 http://localhost:${PORT} 를 열어보세요`);
   console.log(`🤖 AI 기능이 활성화되었습니다!`);
   console.log(`💾 데이터베이스가 연결되었습니다!`);
+  console.log(`🗺️ 카카오 지도 API 연결됨!`);
 });
