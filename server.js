@@ -281,6 +281,63 @@ app.post('/api/geocode', async (req, res) => {
   }
 });
 
+// 인스타그램 릴스 캡션 크롤링 API
+app.post('/api/instagram-caption', async (req, res) => {
+  try {
+    const { url } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL을 입력해주세요'
+      });
+    }
+    
+    console.log('인스타그램 URL:', url);
+    
+    // 인스타그램 페이지 가져오기
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+      }
+    });
+    
+    const html = await response.text();
+    
+    // meta 태그에서 description 추출
+    const descMatch = html.match(/<meta property="og:description" content="([^"]*)"/) ||
+                      html.match(/<meta name="description" content="([^"]*)"/);
+    
+    if (descMatch && descMatch[1]) {
+      const caption = descMatch[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#x27;/g, "'");
+      
+      console.log('추출된 캡션:', caption);
+      
+      return res.json({
+        success: true,
+        caption: caption
+      });
+    }
+    
+    res.json({
+      success: false,
+      error: '캡션을 찾을 수 없습니다'
+    });
+    
+  } catch (error) {
+    console.error('크롤링 에러:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // 서버 시작
 const PORT = 3000;
 app.listen(PORT, () => {
@@ -289,4 +346,5 @@ app.listen(PORT, () => {
   console.log(`🤖 AI 기능이 활성화되었습니다!`);
   console.log(`💾 데이터베이스가 연결되었습니다!`);
   console.log(`🗺️ 카카오 지도 API 연결됨!`);
-}); 
+  console.log(`📸 인스타그램 크롤링 API 연결됨!`);
+});
