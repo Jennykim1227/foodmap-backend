@@ -210,7 +210,7 @@ app.delete('/api/places/:id', async (req, res) => {
   }
 });
 
-// 카카오 좌표 변환 API
+// 카카오 좌표 변환 API (개선됨)
 app.post('/api/geocode', async (req, res) => {
   try {
     const { address } = req.body;
@@ -224,48 +224,88 @@ app.post('/api/geocode', async (req, res) => {
     
     console.log('좌표 변환 요청:', address);
     
-    const query = encodeURIComponent(address);
+    // 검색 시도할 주소 변형들
+    const searchQueries = [
+      address,
+      address.replace(/\s+/g, ' ').trim(),
+      address.replace(/[0-9-]+층?호?$/g, '').trim(),
+    ];
     
-    // 주소 검색
-    let response = await fetch(
-      `https://dapi.kakao.com/v2/local/search/address.json?query=${query}`,
-      {
-        headers: {
-          'Authorization': 'KakaoAK 1fd7b644e2bc999f88fe79931e19e618'
+    // 1. 주소 검색 시도
+    for (const query of searchQueries) {
+      const encoded = encodeURIComponent(query);
+      
+      const response = await fetch(
+        `https://dapi.kakao.com/v2/local/search/address.json?query=${encoded}`,
+        {
+          headers: {
+            'Authorization': 'KakaoAK 1fd7b644e2bc999f88fe79931e19e618'
+          }
         }
+      );
+      
+      const data = await response.json();
+      
+      if (data.documents && data.documents.length > 0) {
+        console.log('주소 검색 성공:', query);
+        return res.json({
+          success: true,
+          lat: parseFloat(data.documents[0].y),
+          lng: parseFloat(data.documents[0].x)
+        });
       }
-    );
-    
-    let data = await response.json();
-    console.log('카카오 주소 검색 결과:', data.documents?.length || 0);
-    
-    if (data.documents && data.documents.length > 0) {
-      return res.json({
-        success: true,
-        lat: parseFloat(data.documents[0].y),
-        lng: parseFloat(data.documents[0].x)
-      });
     }
     
-    // 주소 검색 실패시 키워드 검색
-    response = await fetch(
-      `https://dapi.kakao.com/v2/local/search/keyword.json?query=${query}`,
-      {
-        headers: {
-          'Authorization': 'KakaoAK 1fd7b644e2bc999f88fe79931e19e618'
+    // 2. 키워드 검색 시도
+    for (const query of searchQueries) {
+      const encoded = encodeURIComponent(query);
+      
+      const response = await fetch(
+        `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encoded}`,
+        {
+          headers: {
+            'Authorization': 'KakaoAK 1fd7b644e2bc999f88fe79931e19e618'
+          }
         }
+      );
+      
+      const data = await response.json();
+      
+      if (data.documents && data.documents.length > 0) {
+        console.log('키워드 검색 성공:', query);
+        return res.json({
+          success: true,
+          lat: parseFloat(data.documents[0].y),
+          lng: parseFloat(data.documents[0].x)
+        });
       }
-    );
+    }
     
-    data = await response.json();
-    console.log('카카오 키워드 검색 결과:', data.documents?.length || 0);
-    
-    if (data.documents && data.documents.length > 0) {
-      return res.json({
-        success: true,
-        lat: parseFloat(data.documents[0].y),
-        lng: parseFloat(data.documents[0].x)
-      });
+    // 3. 도시명 + 구/군으로만 검색
+    const cityMatch = address.match(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)[시도]?\s*(\S+[구군시])/);
+    if (cityMatch) {
+      const cityQuery = `${cityMatch[1]} ${cityMatch[2]}`;
+      const encoded = encodeURIComponent(cityQuery);
+      
+      const response = await fetch(
+        `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encoded}`,
+        {
+          headers: {
+            'Authorization': 'KakaoAK 1fd7b644e2bc999f88fe79931e19e618'
+          }
+        }
+      );
+      
+      const data = await response.json();
+      
+      if (data.documents && data.documents.length > 0) {
+        console.log('도시 검색 성공:', cityQuery);
+        return res.json({
+          success: true,
+          lat: parseFloat(data.documents[0].y),
+          lng: parseFloat(data.documents[0].x)
+        });
+      }
     }
     
     res.json({
